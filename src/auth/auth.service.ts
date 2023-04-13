@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as argon from 'argon2';
 import { AuthDTO } from './dto';
@@ -47,13 +51,15 @@ export class AuthService {
     });
 
     // if the user does not exist, throw an error
-    if (!user) new ForbiddenException('Credentials are incorrect');
+    if (!user) throw new ForbiddenException('Credentials are incorrect');
 
     // compare the password hash
     const passwordMatch = await argon.verify(user.hash, password);
+    console.log({ passwordMatch });
 
     // if the password is incorrect, throw an error
-    if (!passwordMatch) new ForbiddenException('Credentials are incorrect');
+    if (!passwordMatch)
+      throw new UnauthorizedException('Credentials are incorrect');
 
     // delete the password hash from the user object
     delete user.hash;
