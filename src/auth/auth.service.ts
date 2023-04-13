@@ -9,14 +9,17 @@ export class AuthService {
   constructor(private prisma: PrismaService) {}
 
   async signup(dto: AuthDTO) {
+    // destructing dto
+    const { email, password } = dto;
+
     // generate the password hash
-    const hash = await argon.hash(dto.password);
+    const hash = await argon.hash(password);
 
     // save the user to the database
     try {
       const user = await this.prisma.user.create({
         data: {
-          email: dto.email,
+          email,
           hash: hash,
         },
       });
@@ -32,9 +35,32 @@ export class AuthService {
       }
     }
   }
-  signin() {
+  async signin(dto: AuthDTO) {
+    // destructing dto
+    const { email, password } = dto;
+
+    // find the usr in the database
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    // if the user does not exist, throw an error
+    if (!user) new ForbiddenException('Credentials are incorrect');
+
+    // compare the password hash
+    const passwordMatch = await argon.verify(user.hash, password);
+
+    // if the password is incorrect, throw an error
+    if (!passwordMatch) new ForbiddenException('Credentials are incorrect');
+
+    // delete the password hash from the user object
+    delete user.hash;
+
+    // return the user
     return {
-      msg: 'This is the signin route',
+      user: user,
     };
   }
 }
