@@ -36,7 +36,10 @@ export class AuthService {
       });
 
       delete user.hash;
-      return user;
+      return {
+        access_token: await this.signToken(user.id, user.email),
+        email: user.email,
+      };
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
