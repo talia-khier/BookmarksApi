@@ -6,7 +6,7 @@ import { JWTGuard } from 'src/auth/guard';
 @UseGuards(JWTGuard)
 @Controller('users')
 export class UserController {
-  @Get('/user')
+  @Get('/me')
   getUserById(@GetUser() user: User) {
     return user;
   }
