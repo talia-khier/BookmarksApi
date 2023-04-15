@@ -5,12 +5,19 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as argon from 'argon2';
-import { AuthDTO } from './dto';
 import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+
+import { AuthDTO } from './dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private configModule: ConfigService,
+  ) {}
 
   async signup(dto: AuthDTO) {
     // destructing dto
@@ -66,7 +73,27 @@ export class AuthService {
 
     // return the user
     return {
-      user: user,
+      access_token: await this.signToken(user.id, user.email),
+      email: user.email,
     };
+  }
+
+  signToken(userId: number, email: string): Promise<string> {
+    return this.jwt.signAsync(
+      {
+        sub: userId,
+        email,
+      },
+      {
+        expiresIn: this.configModule.getOrThrow('JWT_EXPIRES_IN'),
+        secret: this.configModule.getOrThrow('JWT_SECRET'),
+      },
+    );
+  }
+
+  async verifyToken(token: string): Promise<any> {
+    return await this.jwt.verifyAsync(token, {
+      secret: this.configModule.getOrThrow('JWT_SECRET'),
+    });
   }
 }
